@@ -19,7 +19,15 @@ npm install
 npm run dev
 ```
 
-### Demo
+### New Demo
+- glassdoor - https://www.loom.com/share/68ee833479a242d7bd428e8b94090678?sid=a445243a-e12a-4bea-acf1-49fcf4f7fd5c
+
+- facebook - https://www.loom.com/share/aa1aeb9494df4a0cbf12b816921efb4e?sid=d4a6f7ea-0b7b-4c01-92e7-2d3f334bd7bb
+
+- yelp - https://www.loom.com/share/8e920beb63464cdc938634bd78deeae4?sid=e69a5ab3-3118-4fec-ae69-d0f464adbbbf
+
+
+### Old Demo
 - glassdoor - https://www.loom.com/share/d2d30330945341cc8797798f58a920a2
 
 - yelp - https://www.loom.com/share/fea95fd45cec42918feb872537bd761f

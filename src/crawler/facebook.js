@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const userAgents = require('./utils/userAgent');
 const createLimiter = require('./utils/rateLimiter');
+const logger = require('../config/logger');
 
 const limiter = createLimiter(60000);
 
@@ -101,9 +102,11 @@ async function getReviewsFromFacebook(sourceURL, filterDate) {
       filterDate
     );
 
+    logger.info(JSON.stringify(reviews));
     allReviews.push(...reviews);
 
-    if (ctr < 10) {
+    // test for 2 pages only
+    if (ctr < 2) {
       ctr += 1;
       // Scroll to the bottom of the page
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

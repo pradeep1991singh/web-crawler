@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const userAgents = require('./utils/userAgent');
 const createLimiter = require('./utils/rateLimiter');
+const logger = require('../config/logger');
 
 const limiter = createLimiter(60000);
 
@@ -70,10 +71,10 @@ async function getReviewsFromYelp(sourceURL, filterDate) {
       )
     );
 
-    console.log(reviews);
-
+    logger.info(JSON.stringify(reviews));
     allReviews.push(...reviews);
 
+    // test for 2 pages only
     if (ctr < 2) {
       ctr += 1;
 
