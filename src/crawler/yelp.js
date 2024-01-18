@@ -11,49 +11,46 @@ async function getReviewsFromYelp(sourceURL, filterDate) {
   const userAgent = await userAgents.rotateUserAgent();
   await page.setUserAgent(userAgent);
 
-  await limiter.schedule(() => page.goto(sourceURL, { waitUntil: 'networkidle0' }));
-
-  // await page.setRequestInterception(true);
-  // page.on('request', (request) => {
-  //   console.log('Request URL:', request.url());
-  //   request.continue();
-  // });
-
-  // page.on('response', async (response) => {
-  //   try {
-  //     console.log('Response URL:', response.url());
-  //     if (response.url().indexOf('/props?')) {
-  //       console.log('Response data:', await response.json());
-  //     }
-  //   } catch (error) {
-  //     console.error('Failed to get response data:', error);
-  //   }
-  // });
+  await limiter.schedule(() => page.goto(sourceURL, { waitUntil: 'networkidle0', timeout: 100000 }));
 
   const title = await page.title();
-  const overallReviewCount = await page.$eval('[data-testid=review-summary]', (el) => el.textContent);
+  // const overallReviewCount = await page.$eval('[data-testid=review-summary]', (el) => el.textContent);
+  // const overallRating = await page.$eval('div[data-testid=review-summary] div[aria-label$=" star rating"]', (el) =>
+  //   parseFloat(el.getAttribute('aria-label'), 10)
+  // );
 
-  const overallRating = await page.$eval('div[data-testid=review-summary] div[aria-label$=" star rating"]', (el) =>
-    parseFloat(el.getAttribute('aria-label'), 10)
-  );
+  const allReviews = [];
+  let ctr = 0;
 
-  const reviews = await limiter.schedule(() =>
-    page.$$eval(
-      '#reviews ul li',
-      // eslint-disable-next-line
-      (elements, filterDate) => {
-        return elements
-          .map((el) => {
-            let elem = null;
-            const userPassport = el.querySelector('.user-passport-info span');
-            let reviewName = '';
-            let rating = 0;
-            let comment = '';
-            let reviewDate = '';
-            if (userPassport) {
-              reviewDate = el.querySelector('div div.arrange-unit:nth-child(2) span').textContent;
-              if (filterDate) {
-                if (new Date(reviewDate) >= new Date(filterDate)) {
+  async function getReviews() {
+    const reviews = await limiter.schedule(() =>
+      page.$$eval(
+        '#reviews > section > div.css-1qn0b6x > ul',
+        // eslint-disable-next-line
+        (elements, filterDate) => {
+          return elements
+            .map((el) => {
+              let elem = null;
+              const userPassport = el.querySelector('.user-passport-info span');
+              let reviewName = '';
+              let rating = 0;
+              let comment = '';
+              let reviewDate = '';
+              if (userPassport) {
+                reviewDate = el.querySelector('div div.arrange-unit:nth-child(2) span').textContent;
+                if (filterDate) {
+                  if (new Date(reviewDate) >= new Date(filterDate)) {
+                    reviewName = userPassport.textContent;
+                    rating = parseFloat(el.querySelector('div[aria-label$=" star rating"]').getAttribute('aria-label'), 10);
+
+                    const childElements = Array.from(el.querySelectorAll('p'));
+                    comment = childElements.find((ell) =>
+                      Array.from(ell.classList).some((cls) => cls.startsWith('comment__'))
+                    ).textContent;
+
+                    elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
+                  }
+                } else {
                   reviewName = userPassport.textContent;
                   rating = parseFloat(el.querySelector('div[aria-label$=" star rating"]').getAttribute('aria-label'), 10);
 
@@ -64,32 +61,42 @@ async function getReviewsFromYelp(sourceURL, filterDate) {
 
                   elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
                 }
-              } else {
-                reviewName = userPassport.textContent;
-                rating = parseFloat(el.querySelector('div[aria-label$=" star rating"]').getAttribute('aria-label'), 10);
-
-                const childElements = Array.from(el.querySelectorAll('p'));
-                comment = childElements.find((ell) =>
-                  Array.from(ell.classList).some((cls) => cls.startsWith('comment__'))
-                ).textContent;
-
-                elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
               }
-            }
-            return elem;
-          })
-          .filter(Boolean);
-      },
-      filterDate
-    )
-  );
+              return elem;
+            })
+            .filter(Boolean);
+        },
+        filterDate
+      )
+    );
+
+    console.log(reviews);
+
+    allReviews.push(...reviews);
+
+    if (ctr < 2) {
+      ctr += 1;
+
+      // Select the element with aria-label="Pagination navigation"
+      const paginationNav = await page.$('[aria-label="Pagination navigation"]');
+      if (paginationNav) {
+        // Find the a tag with aria-label="Next" and click it
+        await page.$eval('[aria-label="Next"]', (nextButton) => nextButton.click(), paginationNav);
+      }
+
+      // Call getReviews recursively
+      await getReviews();
+    }
+  }
+
+  await getReviews();
 
   const response = {
     title,
-    overall_rating: overallRating,
-    review_count: overallReviewCount,
-    aggregated_reviews: reviews,
-    review_aggregated_count: reviews.length,
+    // overall_rating: overallRating,
+    // review_count: overallReviewCount,
+    aggregated_reviews: allReviews,
+    review_aggregated_count: allReviews.length,
     response_code: 200,
   };
 
@@ -101,27 +108,3 @@ async function getReviewsFromYelp(sourceURL, filterDate) {
 module.exports = {
   getReviewsFromYelp,
 };
-
-// const userPassport = el.querySelector('.user-passport-info span');
-// let userPassportInfo = '';
-// let starRating = 0;
-// let comment = '';
-// let date = '';
-// if (userPassport) {
-//   userPassportInfo = userPassport.textContent;
-//   starRating = parseFloat(el.querySelector('div[aria-label$=" star rating"]').getAttribute('aria-label'), 10);
-
-//   const childElements = Array.from(el.querySelectorAll('p'));
-//   comment = childElements.find((ell) =>
-//     Array.from(ell.classList).some((cls) => cls.startsWith('comment__'))
-//   ).textContent;
-
-//   date = el.querySelector('div div.arrange-unit:nth-child(2) span').textContent;
-// }
-
-// return {
-//   rating: starRating,
-//   reviewer_name: userPassportInfo,
-//   review_date: date,
-//   comment,
-// };
