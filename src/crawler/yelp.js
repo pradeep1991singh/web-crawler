@@ -14,10 +14,10 @@ async function getReviewsFromYelp(sourceURL, filterDate) {
   await limiter.schedule(() => page.goto(sourceURL, { waitUntil: 'networkidle0', timeout: 100000 }));
 
   const title = await page.title();
-  // const overallReviewCount = await page.$eval('[data-testid=review-summary]', (el) => el.textContent);
-  // const overallRating = await page.$eval('div[data-testid=review-summary] div[aria-label$=" star rating"]', (el) =>
-  //   parseFloat(el.getAttribute('aria-label'), 10)
-  // );
+  const overallReviewCount = await page.$eval('[data-testid=review-summary]', (el) => el.textContent);
+  const overallRating = await page.$eval('div[data-testid=review-summary] div[aria-label$=" star rating"]', (el) =>
+    parseFloat(el.getAttribute('aria-label'), 10)
+  );
 
   const allReviews = [];
   let ctr = 0;
@@ -93,8 +93,8 @@ async function getReviewsFromYelp(sourceURL, filterDate) {
 
   const response = {
     title,
-    // overall_rating: overallRating,
-    // review_count: overallReviewCount,
+    overall_rating: overallRating,
+    review_count: overallReviewCount,
     aggregated_reviews: allReviews,
     review_aggregated_count: allReviews.length,
     response_code: 200,
