@@ -27,11 +27,11 @@ npm run dev
 - yelp - https://www.loom.com/share/8e920beb63464cdc938634bd78deeae4?sid=31f53241-8184-4324-9d9c-65b4015e3c2a
 
 
-### Old Demo
-- glassdoor - https://www.loom.com/share/d2d30330945341cc8797798f58a920a2
+<!-- ### Old Demo -->
+<!-- - glassdoor - https://www.loom.com/share/d2d30330945341cc8797798f58a920a2 -->
 
-- yelp - https://www.loom.com/share/fea95fd45cec42918feb872537bd761f
+<!-- - yelp - https://www.loom.com/share/fea95fd45cec42918feb872537bd761f -->
 
-- facebook - https://www.loom.com/share/727d3578dd8647d095734109aa68522f
+<!-- - facebook - https://www.loom.com/share/727d3578dd8647d095734109aa68522f -->
 
 
