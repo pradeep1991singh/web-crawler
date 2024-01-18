@@ -24,7 +24,7 @@ npm run dev
 
 - facebook - https://www.loom.com/share/aa1aeb9494df4a0cbf12b816921efb4e?sid=d4a6f7ea-0b7b-4c01-92e7-2d3f334bd7bb
 
-- yelp - https://www.loom.com/share/8e920beb63464cdc938634bd78deeae4?sid=e69a5ab3-3118-4fec-ae69-d0f464adbbbf
+- yelp - https://www.loom.com/share/8e920beb63464cdc938634bd78deeae4?sid=31f53241-8184-4324-9d9c-65b4015e3c2a
 
 
 ### Old Demo

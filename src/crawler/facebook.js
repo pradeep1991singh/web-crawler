@@ -55,27 +55,38 @@ async function getReviewsFromFacebook(sourceURL, filterDate) {
   let ctr = 0;
 
   async function getReviews() {
-    const reviews = await page.$$eval(
-      '[role="main"] [role="article"]',
-      // eslint-disable-next-line
-      (elements, filterDate) => {
-        return elements
-          .map((el) => {
-            let reviewName = '';
-            const rating = 0;
-            let comment = '';
-            let reviewDate = '';
+    try {
+      const reviews = await page.$$eval(
+        '[role="main"] [role="article"]',
+        // eslint-disable-next-line
+        (elements, filterDate) => {
+          return elements
+            .map((el) => {
+              let reviewName = '';
+              const rating = 0;
+              let comment = '';
+              let reviewDate = '';
 
-            let elem = null;
-            if (el.querySelector('a[role="link"]')) {
-              const ariaLabel = el.querySelector('a[role="link"]').getAttribute('aria-label');
-              const date = new Date(ariaLabel);
-              if (!Number.isNaN(date.getTime())) {
-                reviewDate = ariaLabel;
+              let elem = null;
+              if (el.querySelector('a[role="link"]')) {
+                const ariaLabel = el.querySelector('a[role="link"]').getAttribute('aria-label');
+                const date = new Date(ariaLabel);
+                if (!Number.isNaN(date.getTime())) {
+                  reviewDate = ariaLabel;
+                }
               }
-            }
-            if (filterDate) {
-              if (new Date(reviewDate) >= new Date(filterDate)) {
+              if (filterDate) {
+                if (new Date(reviewDate) >= new Date(filterDate)) {
+                  if (el.querySelector('h2 a')) {
+                    reviewName = el.querySelector('h2 a').textContent;
+                  }
+
+                  if (el.querySelector('[data-ad-comet-preview="message"]')) {
+                    comment = el.querySelector('[data-ad-comet-preview="message"]').textContent;
+                  }
+                  elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
+                }
+              } else {
                 if (el.querySelector('h2 a')) {
                   reviewName = el.querySelector('h2 a').textContent;
                 }
@@ -85,38 +96,31 @@ async function getReviewsFromFacebook(sourceURL, filterDate) {
                 }
                 elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
               }
-            } else {
-              if (el.querySelector('h2 a')) {
-                reviewName = el.querySelector('h2 a').textContent;
-              }
+              return elem;
+            })
+            .filter(Boolean);
+        },
+        filterDate
+      );
 
-              if (el.querySelector('[data-ad-comet-preview="message"]')) {
-                comment = el.querySelector('[data-ad-comet-preview="message"]').textContent;
-              }
-              elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
-            }
-            return elem;
-          })
-          .filter(Boolean);
-      },
-      filterDate
-    );
+      logger.info(JSON.stringify(reviews));
+      allReviews.push(...reviews);
 
-    logger.info(JSON.stringify(reviews));
-    allReviews.push(...reviews);
+      // test for 2 pages only
+      if (ctr < 2) {
+        ctr += 1;
+        // Scroll to the bottom of the page
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-    // test for 2 pages only
-    if (ctr < 2) {
-      ctr += 1;
-      // Scroll to the bottom of the page
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        // Wait for 100ms
+        await new Promise((resolve) => setTimeout(resolve, 200));
 
-      // Wait for 100ms
-      await new Promise((resolve) => setTimeout(resolve, 200));
+        // Call getReviews recursively
 
-      // Call getReviews recursively
-
-      await getReviews();
+        await getReviews();
+      }
+    } catch (error) {
+      logger.error(error);
     }
   }
 
