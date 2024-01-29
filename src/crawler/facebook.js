@@ -6,7 +6,7 @@ const logger = require('../config/logger');
 const limiter = createLimiter(60000);
 
 async function getReviewsFromFacebook(sourceURL, filterDate) {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: false, defaultViewport: null, args: ['--start-maximized'] });
   const page = await browser.newPage();
 
   const userAgent = await userAgents.rotateUserAgent();
@@ -84,7 +84,10 @@ async function getReviewsFromFacebook(sourceURL, filterDate) {
                   if (el.querySelector('[data-ad-comet-preview="message"]')) {
                     comment = el.querySelector('[data-ad-comet-preview="message"]').textContent;
                   }
-                  elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
+
+                  if (comment.trim() !== '') {
+                    elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
+                  }
                 }
               } else {
                 if (el.querySelector('h2 a')) {
@@ -94,7 +97,10 @@ async function getReviewsFromFacebook(sourceURL, filterDate) {
                 if (el.querySelector('[data-ad-comet-preview="message"]')) {
                   comment = el.querySelector('[data-ad-comet-preview="message"]').textContent;
                 }
-                elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
+
+                if (comment.trim() !== '') {
+                  elem = { rating, review_date: reviewDate, reviewer_name: reviewName, comment };
+                }
               }
               return elem;
             })
@@ -107,18 +113,19 @@ async function getReviewsFromFacebook(sourceURL, filterDate) {
       allReviews.push(...reviews);
 
       // test for 2 pages only
-      if (ctr < 2) {
-        ctr += 1;
-        // Scroll to the bottom of the page
-        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      // disable for production
+      // if (ctr < 2) {
+      //   ctr += 1;
+      // Scroll to the bottom of the page
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
 
-        // Wait for 100ms
-        await new Promise((resolve) => setTimeout(resolve, 200));
+      // Wait for 100ms
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-        // Call getReviews recursively
+      // Call getReviews recursively
 
-        await getReviews();
-      }
+      await getReviews();
+      // }
     } catch (error) {
       logger.error(error);
     }

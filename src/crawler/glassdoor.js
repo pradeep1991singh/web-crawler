@@ -6,17 +6,68 @@ const logger = require('../config/logger');
 const limiter = createLimiter(60000);
 
 async function getReviewsFromGlassdoor(sourceURL, filterDate) {
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({
+    headless: false,
+    defaultViewport: null,
+    args: ['--start-maximized'],
+  });
   const page = await browser.newPage();
 
   const userAgent = await userAgents.rotateUserAgent();
   await page.setUserAgent(userAgent);
 
-  await limiter.schedule(() => page.goto(sourceURL, { waitUntil: 'networkidle0' }));
+  await limiter.schedule(() => page.goto(sourceURL, { waitUntil: ['load', 'networkidle0'] }));
+
+  try {
+    await page.waitForSelector('#SignInButton');
+    await page.click('#SignInButton');
+    logger.info('sign in button clicked');
+
+    await page.waitForSelector('input[type="email"]');
+    await page.type('input[type="email"]', 'pradeep1991singh+test2024@gmail.com');
+    logger.info('email entered');
+
+    await page.click('[data-test="email-form-button"]');
+    await page.waitForSelector('input[type="password"]');
+    await page.type('input[type="password"]', 'Test2025@4321');
+    logger.info('password entered');
+
+    await page.click('button[type="submit"]');
+
+    const closeButton = await page.$('.ContentSection .CloseButton');
+    if (closeButton) {
+      await page.waitForTimeout(2000);
+      await closeButton.click();
+      logger.info('close button clicked');
+      await page.waitForTimeout(2000);
+      logger.info('wait for navigation completed');
+    }
+  } catch (newError) {
+    logger.info(newError.message);
+  } finally {
+  }
+  // }
 
   const title = await page.title();
+
+  logger.info('wait for profile selector');
+  await page.waitForSelector('[aria-label="profile"]');
   const overallReviewCount = await page.$eval('[data-test=ei-nav-reviews-link]', (el) => parseInt(el.innerText, 10));
-  const overallRating = await page.$eval('.v2__EIReviewsRatingsStylesV2__ratingNum', (el) => el.innerText);
+
+  let overallRating = 0;
+  try {
+    overallRating = await page.$eval('.v2__EIReviewsRatingsStylesV2__ratingNum', (el) => el.innerText);
+  } catch (error) {
+    logger.info('.v2__EIReviewsRatingsStylesV2__ratingNum not found, trying next selector');
+  }
+
+  if (!overallRating) {
+    try {
+      overallRating = await page.$eval('[data-test=rating-headline] div p', (el) => el.innerText);
+    } catch (error) {
+      logger.info('[data-test=rating-headline] div p not found');
+    }
+  }
 
   const allReviews = [];
   let ctr = 0;
@@ -58,15 +109,15 @@ async function getReviewsFromGlassdoor(sourceURL, filterDate) {
       allReviews.push(...reviews);
 
       // test for 2 pages only
-      if (ctr < 2) {
-        // Check if the next button is disabled
-        const isDisabled = await page.$eval('.pageContainer .nextButton', (button) => button.disabled);
-        if (!isDisabled) {
-          await page.click('.pageContainer .nextButton');
-          ctr += 1;
-          await getReviews();
-        }
+      // if (ctr < 2) {
+      // Check if the next button is disabled
+      const isDisabled = await page.$eval('.pageContainer .nextButton', (button) => button.disabled);
+      if (!isDisabled) {
+        await page.click('.pageContainer .nextButton');
+        // ctr += 1;
+        await getReviews();
       }
+      // }
     } catch (error) {
       logger.error(error);
     }
